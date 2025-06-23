@@ -1,0 +1,27 @@
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+ENV ASPNETCORE_ENVIRONMENT="Staging"
+WORKDIR /app
+EXPOSE 5003
+
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+WORKDIR /src
+COPY ["Marshall.Web/Marshall.Web.csproj", "Marshall.Web/"]
+COPY ["Marshall.Utilities/Marshall.Utilities.csproj", "Marshall.Utilities/"]
+COPY ["Marshall.Models/Marshall.Models.csproj", "Marshall.Models/"]
+COPY ["Marshall.Infrastructure/Marshall.Infrastructure.csproj", "Marshall.Infrastructure/"]
+COPY ["Marshall.Data/Marshall.Data.csproj", "Marshall.Data/"]
+RUN dotnet restore "Marshall.Web/Marshall.Web.csproj"
+COPY . .
+WORKDIR "/src/Marshall.Web"
+RUN dotnet build "Marshall.Web.csproj" -c Release --no-restore -o /app/build
+
+# Publish stage
+FROM build AS publish
+RUN dotnet publish "Marshall.Web.csproj" -c Release --no-restore -o /app/publish
+
+# Final runtime stage
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Marshall.Web.dll"]
