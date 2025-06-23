@@ -1,0 +1,22 @@
+version: '3.4'
+
+services:
+  marshall-web:
+    build:
+      context: .
+      dockerfile: Marshall.Web/Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:5003
+    depends_on:
+      - marshall-api
+
+  marshall-api:
+    build:
+      context: .
+      dockerfile: Marshall.Api/Dockerfile
+    ports:
+      - "5002:5002"
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:5002
