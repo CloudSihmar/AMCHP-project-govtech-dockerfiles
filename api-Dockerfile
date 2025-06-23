@@ -1,0 +1,29 @@
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+ENV ASPNETCORE_ENVIRONMENT="Staging"
+WORKDIR /src
+
+# Copy csproj files and restore
+COPY ["Marshall.Api/Marshall.Api.csproj", "Marshall.Api/"]
+COPY ["Marshall.Utilities/Marshall.Utilities.csproj", "Marshall.Utilities/"]
+COPY ["Marshall.Models/Marshall.Models.csproj", "Marshall.Models/"]
+COPY ["Marshall.Infrastructure/Marshall.Infrastructure.csproj", "Marshall.Infrastructure/"]
+COPY ["Marshall.Data/Marshall.Data.csproj", "Marshall.Data/"]
+
+RUN dotnet restore "Marshall.Api/Marshall.Api.csproj"
+
+# Copy the rest of the source code
+COPY . .
+WORKDIR /src/Marshall.Api
+RUN dotnet build "Marshall.Api.csproj" -c Release --no-restore -o /app/build
+
+# Publish stage
+FROM build AS publish
+RUN dotnet publish "Marshall.Api.csproj" -c Release --no-restore -o /app/publish
+
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENV ASPNETCORE_ENVIRONMENT="Staging"
+EXPOSE 5002
+ENTRYPOINT ["dotnet", "Marshall.Api.dll"]
